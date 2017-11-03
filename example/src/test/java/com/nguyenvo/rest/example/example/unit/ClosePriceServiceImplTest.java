@@ -27,7 +27,7 @@ public class ClosePriceServiceImplTest {
     @Before
     public void setUp() {
         initMocks(this);
-        closePriceService = new ClosePriceServiceImpl(quandlConnector);
+        closePriceService = new ClosePriceServiceImpl(quandlConnector,"yyyy-mm-dd");
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.nguyenvo.rest.example.example.controller;
 
 import com.nguyenvo.rest.example.example.domain.ClosePrice;
+import com.nguyenvo.rest.example.example.domain.TwoHundredDaysMovingAverage;
 import com.nguyenvo.rest.example.example.service.ClosePriceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +25,13 @@ public class ClosePriceController {
                                                    @RequestParam("startDate") String startDate,
                                                    @RequestParam("endDate") String endDate) {
 
-        System.out.println(tickerSymbol + "---" + startDate + "---" + endDate);
         return closePriceService.getCloseForTickerInDateRange(tickerSymbol, startDate, endDate);
+    }
+
+    @RequestMapping("/{tickerSymbol}/200dma")
+    public TwoHundredDaysMovingAverage getMVAForTicker(@PathVariable("tickerSymbol") String tickerSymbol,
+                                                       @RequestParam("startDate") String startDate) {
+
+        return closePriceService.getMVAForTicker(tickerSymbol, startDate);
     }
 }
