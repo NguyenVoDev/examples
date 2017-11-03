@@ -42,6 +42,7 @@ public class QuandlConnectorImpl implements QuandlConnector {
         builder.queryParam("start_date", startDate);
         builder.queryParam("end_date", endDate);
         builder.queryParam("order","asc");
+        builder.queryParam("api_key","Yz2D2aN_MCwbK9zgxGdN");
         restTemplate.setErrorHandler(new DefaultResponseErrorHandler(){
             protected boolean hasError(HttpStatus statusCode){
                 return false;
