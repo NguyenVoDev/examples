@@ -1,4 +1,5 @@
 package com.nguyenvo.rest.example.example.service.connector.impl;
+import com.nguyenvo.rest.example.example.exception.ClosePriceException;
 import com.nguyenvo.rest.example.example.service.connector.QuandlConnector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +31,7 @@ public class QuandlConnectorImpl implements QuandlConnector {
     }
 
     @Override
-    public String getCloseForTickerInDateRange(String tickerSymbol, String startDate, String endDate) {
+    public String getCloseForTickerInDateRange(String tickerSymbol, String startDate, String endDate) throws ClosePriceException {
         HttpHeaders httpHeaders = new HttpHeaders();
         HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
         Map<String, String> params = new HashMap<String, String>();
@@ -50,7 +51,7 @@ public class QuandlConnectorImpl implements QuandlConnector {
         });
         ResponseEntity<String> response = restTemplate.exchange(builder.build().toUriString(), HttpMethod.GET,httpEntity, String.class);
         if(response.getStatusCode() != HttpStatus.OK){
-            throw new RuntimeException(response.getBody());
+            throw new ClosePriceException(response.getBody());
         }
         return response.getBody();
     }
