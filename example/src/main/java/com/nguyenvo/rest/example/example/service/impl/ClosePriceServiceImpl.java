@@ -11,7 +11,6 @@ import com.nguyenvo.rest.example.example.domain.TwoHundredDaysMovingAverageValue
 import com.nguyenvo.rest.example.example.exception.ClosePriceException;
 import com.nguyenvo.rest.example.example.service.ClosePriceService;
 import com.nguyenvo.rest.example.example.service.connector.QuandlConnector;
-import com.sun.istack.internal.Nullable;
 import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +42,9 @@ public class ClosePriceServiceImpl implements ClosePriceService {
 
     private static final int CLOSE_INDEX = 4;
 
+    private static final int TOTAL_TICKER_ELEMENTS_ON_MEMORY = 4;
+    private static final int LAST_INDEX = TOTAL_TICKER_ELEMENTS_ON_MEMORY - 1;
+
     List<String> cachedTickers = new CopyOnWriteArrayList<String>();
 
     Map<String, Map> cachedDataOfTicketMap = new ConcurrentHashMap<>();
@@ -56,6 +58,18 @@ public class ClosePriceServiceImpl implements ClosePriceService {
 
     @Override
     public ClosePrice getCloseForTickerInDateRange(String tickerSymbol, String startDate, String endDate) throws ClosePriceException {
+        ClosePrice cachedData = getFromCache(tickerSymbol, startDate, endDate);
+        if (cachedData != null) {
+            System.out.println("get from cache for: ticker" + tickerSymbol + " StartDate: " + startDate + " EndDate: " + endDate);
+            return cachedData;
+        }
+
+        ClosePrice closePriceFromQuandl = getFromQuandl(tickerSymbol, startDate, endDate);
+        cache(tickerSymbol, startDate, endDate, closePriceFromQuandl);
+        return closePriceFromQuandl;
+    }
+
+    private ClosePrice getFromQuandl(String tickerSymbol, String startDate, String endDate) throws ClosePriceException {
         String responseFromQuandl = quandlConnector.getCloseForTickerInDateRange(tickerSymbol, startDate, endDate);
         return buildClosePriceFromResponse(responseFromQuandl, tickerSymbol);
     }
@@ -170,10 +184,13 @@ public class ClosePriceServiceImpl implements ClosePriceService {
     }
 
     private void cache(String ticker, String startDate, String endDate, ClosePrice data) {
+        if(data == null || getFromCache(ticker, startDate, endDate) != null){
+            return;
+        }
         if (cachedTickers.contains(ticker)) {
             Collections.swap(cachedTickers, 0, cachedTickers.indexOf(ticker));
         } else {
-            if (cachedTickers.size() == 100) {
+            if (cachedTickers.size() == TOTAL_TICKER_ELEMENTS_ON_MEMORY) {
                 evitLastOne();
             }
             cachedTickers.add(0, ticker);
@@ -182,9 +199,9 @@ public class ClosePriceServiceImpl implements ClosePriceService {
     }
 
     private void evitLastOne() {
-        final String lastOne = cachedTickers.get(99);
+        final String lastOne = cachedTickers.get(LAST_INDEX);
         cachedDataOfTicketMap.remove(lastOne);
-        cachedTickers.remove(99);
+        cachedTickers.remove(LAST_INDEX);
     }
 
     private String buildKeyOfCachedValue(String startDate, String endDate) {
@@ -200,15 +217,14 @@ public class ClosePriceServiceImpl implements ClosePriceService {
         cachedDataOfTicketMap.put(ticker, cachedValueMap);
     }
 
-    @Nullable
     private ClosePrice getFromCache(String ticker, String startDate, String endDate) {
-        if(!cachedTickers.contains(ticker)){
+        if (!cachedTickers.contains(ticker)) {
             return null;
         }
         Object fromMap = cachedDataOfTicketMap.get(ticker).get(buildKeyOfCachedValue(startDate, endDate));
-        if(!(fromMap instanceof  ClosePrice)){
+        if (!(fromMap instanceof ClosePrice)) {
             return null;
         }
-        return (ClosePrice)fromMap;
+        return (ClosePrice) fromMap;
     }
 }
